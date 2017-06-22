@@ -126,6 +126,43 @@ class ElasticsearchEngine extends Engine
      * Perform the given search on the engine.
      *
      * @param  Builder  $builder
+     * @param  int  $count
+     * @param  callable  $callback
+     * @return bool
+     */
+    public function chunk(Builder $builder, $count, callable $callback)
+    {
+        $page = 1;
+
+        do {
+            $results = Collection::make($this->map(
+                $this->paginate($builder, $count, $page),
+                $builder->model
+            ));
+
+            $countResults = $results->count();
+
+            if ($countResults == 0) {
+                break;
+            }
+
+            // On each chunk result set, we will pass them to the callback and then let the
+            // developer take care of everything within the callback, which allows us to
+            // keep the memory low for spinning through large result sets for working.
+            if ($callback($results) === false) {
+                return false;
+            }
+
+            $page++;
+        } while ($countResults == $count);
+
+        return true;
+    }
+
+    /**
+     * Perform the given search on the engine.
+     *
+     * @param  Builder  $builder
      * @param  array  $options
      * @return mixed
      */

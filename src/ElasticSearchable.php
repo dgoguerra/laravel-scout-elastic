@@ -2,8 +2,8 @@
 
 namespace ScoutEngines\Elasticsearch;
 
-use Laravel\Scout\Builder as ScoutBuilder;
 use Laravel\Scout\Searchable;
+use ScoutEngines\Elasticsearch\Builder as ElasticBuilder;
 
 trait ElasticSearchable
 {
@@ -29,7 +29,7 @@ trait ElasticSearchable
      * @param $method
      * @param $query
      * @param array|null $params
-     * @return ScoutBuilder
+     * @return ElasticBuilder
      */
     public static function elasticSearch($method, $query, array $params = null)
     {
@@ -40,6 +40,6 @@ trait ElasticSearchable
             'params' => $params
         ];
 
-        return new ScoutBuilder($model, $query);
+        return new ElasticBuilder($model, $query);
     }
 }
