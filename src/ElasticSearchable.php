@@ -7,10 +7,11 @@ use Laravel\Scout\Searchable;
 
 trait ElasticSearchable
 {
-
     use Searchable;
 
     public $elasticQuery;
+
+    public $elasticSource;
 
     /**
      * Use the first defined index in config
@@ -41,5 +42,4 @@ trait ElasticSearchable
 
         return new ScoutBuilder($model, $query);
     }
-
 }

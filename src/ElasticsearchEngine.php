@@ -239,6 +239,9 @@ class ElasticsearchEngine extends Engine
             $key = $hit['_id'];
 
             if (isset($models[$key])) {
+                if (isset($hit['_source'])) {
+                    $models[$key]->elasticSource = $hit['_source'];
+                }
                 return $models[$key];
             }
         })->filter();
