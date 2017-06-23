@@ -94,8 +94,6 @@ class ElasticsearchEngine extends Engine
     public function search(Builder $builder)
     {
         return $this->performSearch($builder, array_filter([
-            'numericFilters' => $this->filters($builder),
-            'sorting' => $this->sorting($builder),
             'size' => $builder->limit,
         ]));
     }
@@ -111,8 +109,6 @@ class ElasticsearchEngine extends Engine
     public function paginate(Builder $builder, $perPage, $page)
     {
         $result = $this->performSearch($builder, [
-            'numericFilters' => $this->filters($builder),
-            'sorting' => $this->sorting($builder),
             'from' => (($page * $perPage) - $perPage),
             'size' => $perPage,
         ]);
@@ -174,71 +170,22 @@ class ElasticsearchEngine extends Engine
         $queryParams = isset($builder->model->elasticQuery['params']) ?
             $builder->model->elasticQuery['params'] : $this->queryConfig[$queryMethod];
 
-        $params = [
-            'index' => $builder->model->searchableWithin(),
-            'type' => $builder->model->searchableAs(),
-            'body' => [
-                'query' => [
-                    'bool' => [
-                        'must' => [
-                            [
-                                $queryMethod => array_merge([
-                                    'query' => "{$builder->query}"
-                                ], $queryParams)
-                            ]
-                        ]
-                    ]
-                ],
-                'sort' => [
-                    '_score'
-                ],
-                'track_scores' => true,
-            ]
-        ];
+        $queryDsl = $builder->getQueryDsl();
+
+        $queryDsl->setIndex($builder->model->searchableWithin())
+            ->setType($builder->model->searchableAs())
+            ->setMethod($queryMethod, $queryParams)
+            ->setQuery($builder->query);
 
         if (isset($options['from'])) {
-            $params['body']['from'] = $options['from'];
+            $queryDsl->setFrom($options['from']);
         }
 
         if (isset($options['size'])) {
-            $params['body']['size'] = $options['size'];
+            $queryDsl->setSize($options['size']);
         }
 
-        if (isset($options['numericFilters']) && count($options['numericFilters'])) {
-            $params['body']['query']['bool']['filter'] = $options['numericFilters'];
-        }
-
-        // Sorting
-        if(isset($options['sorting']) && count($options['sorting'])) {
-            $params['body']['sort'] = array_merge($params['body']['sort'],
-                $options['sorting']);
-        }
-
-        return $this->elastic->search($params);
-    }
-
-    /**
-     * Get the filter array for the query.
-     *
-     * @param  Builder  $builder
-     * @return array
-     */
-    protected function filters(Builder $builder)
-    {
-        return collect($builder->wheres)->map(function ($value, $key) {
-            return ['term' => [$key => $value]];
-        })->values()->all();
-    }
-
-    /**
-     * @param Builder $builder
-     * @return array
-     */
-    protected function sorting(Builder $builder)
-    {
-        return collect($builder->orders)->map(function ($value, $key) {
-            return [array_get($value, 'column') => ['order' => array_get($value, 'direction')]];
-        })->values()->all();
+        return $this->elastic->search($queryDsl->build());
     }
 
     /**

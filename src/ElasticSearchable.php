@@ -24,6 +24,21 @@ trait ElasticSearchable
     }
 
     /**
+     * Perform a search against the model's indexed data.
+     *
+     * Overrides Laravel\Scout\Searchable::search() to return an instance
+     * of the custom ScoutEngines\Elasticsearch\Builder class.
+     *
+     * @param  string  $query
+     * @param  Closure  $callback
+     * @return \Laravel\Scout\Builder
+     */
+    public static function search($query, $callback = null)
+    {
+        return new ElasticBuilder(new static, $query, $callback);
+    }
+
+    /**
      * Search; Elasticsearch style
      *
      * @param $method
