@@ -228,7 +228,7 @@ class ElasticsearchEngine extends Engine
                 }
                 return $models[$key];
             }
-        })->filter();
+        })->filter()->values();
     }
 
     /**
